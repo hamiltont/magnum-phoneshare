@@ -1,4 +1,11 @@
-<!-- Indices written at Tue, 6 Sep 2011 04:23:26 UTC -->
+<!-- Indices written at Tue, 6 Sep 2011 07:02:15 UTC -->
 
-<datastore-indexes/>
+<datastore-indexes>
 
+    <!-- Used 2 times in query history -->
+    <datastore-index kind="Device" ancestor="false" source="auto">
+        <property name="mStatus" direction="asc"/>
+        <property name="mCurrentUserId" direction="asc"/>
+    </datastore-index>
+
+</datastore-indexes>

@@ -37,4 +37,8 @@ public class MagnumUser {
 	public boolean getIsAdmin() {
 		return isAdmin;
 	}
+	
+	public String getGoogleId() {
+		return googleID;
+	}
 }

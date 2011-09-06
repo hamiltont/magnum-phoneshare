@@ -3,6 +3,7 @@ package org.magnum.phoneshare.data;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
+import javax.jdo.annotations.PrimaryKey;
 
 import com.google.appengine.api.datastore.Key;
 
@@ -17,7 +18,7 @@ public class Device {
 
 	public enum Status {
 		DEVICE_CHECKED_IN, DEVICE_CHECKED_OUT
-	}
+	};
 
 	@Persistent
 	Status mStatus;
@@ -27,7 +28,7 @@ public class Device {
 	 * Status.DEVICE_CHECKED_OUT
 	 */
 	@Persistent
-	String mCurrentUserId;
+	String mCurrentUserId = "";
 
 	@Persistent
 	String mDisplayName;
@@ -36,9 +37,30 @@ public class Device {
 	String mDescription;
 	
 	@Persistent
+	@PrimaryKey
 	String mSerial;
 	
 	@Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
 	Key mKey;
+	
+	public String getDisplayName() {
+		return mDisplayName;
+	}
+	
+	public String getLengthOfCheckOut() {
+		return "Some time";
+	}
+	
+	public String getSerial() {
+		return mSerial;
+	}
+	
+	public String getCurrentUserGoogleId() {
+		return mCurrentUserId;
+	}
+	
+	public Integer getStatus() {
+		return mStatus.ordinal();
+	}
 
 }

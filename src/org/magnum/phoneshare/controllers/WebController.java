@@ -1,12 +1,18 @@
 package org.magnum.phoneshare.controllers;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 
+import org.magnum.phoneshare.data.Device;
 import org.magnum.phoneshare.data.MagnumUser;
 import org.magnum.phoneshare.data.PMF;
+import org.magnum.phoneshare.data.Device.Status;
+import org.magnum.phoneshare.data.jspmodels.AvailablePhonesResult;
+import org.magnum.phoneshare.data.jspmodels.CheckedOutPhonesResult;
+import org.magnum.phoneshare.data.jspmodels.UserPhoneResult;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,14 +26,15 @@ import com.google.appengine.api.users.UserServiceFactory;
 @Controller
 public class WebController {
 
+	// TODO - If I'm clever I can simply return the List<Device> and process it
+	// properly inside the JSP instead of copying everything
 	@SuppressWarnings("unchecked")
 	@RequestMapping(value = "/home", method = RequestMethod.GET)
 	public ModelAndView getHome(Model model) {
-		// If user is not logged in, redirect to login
+		// Ensure logged in
 		UserService userService = UserServiceFactory.getUserService();
 		if (false == userService.isUserLoggedIn())
-			// TODO create login URL and send to JSP
-			return new ModelAndView("please_login");
+			return new ModelAndView("error");
 
 		// If user is not in the magnum users DB, redirect them
 		PersistenceManager pm = PMF.get().getPersistenceManager();
@@ -47,6 +54,70 @@ public class WebController {
 		modview.addObject("isUserAdmin", user.getIsAdmin()
 				|| userService.isUserAdmin());
 
+		// Query all the phones this user has
+		Query userPhones = pm.newQuery(Device.class);
+		userPhones.setFilter("mStatus == status && mCurrentUserId == gid");
+		userPhones.declareParameters("Integer status, String gid");
+		List<Device> phones = (List<Device>) userPhones.executeWithArray(
+				Status.DEVICE_CHECKED_OUT, user.getGoogleId());
+		ArrayList<UserPhoneResult> userPhoneResult = new ArrayList<UserPhoneResult>(
+				phones.size());
+		for (Device d : phones) {
+			UserPhoneResult up = new UserPhoneResult();
+			up.model = d.getDisplayName();
+			up.checked_out = d.getLengthOfCheckOut();
+			up.serial = d.getSerial();
+			userPhoneResult.add(up);
+		}
+		modview.addObject("userphones", userPhoneResult);
+
+		// Query all available phones
+		// TODO make the location work for admins, fix query count / location
+		// Query availPhones = pm.newQuery(Device.class);
+		// availPhones.setFilter("status == stat");
+		// availPhones.declareParameters("Integer stat");
+		// availPhones.setResult("count(displayName), displayName");
+		// availPhones.setGrouping("displayName");
+
+		// phones = (List<Device>)
+		// availPhones.execute(Status.DEVICE_CHECKED_IN);
+		phones = new ArrayList<Device>();
+		ArrayList<AvailablePhonesResult> availPhoneResult = new ArrayList<AvailablePhonesResult>(
+				phones.size());
+		for (Device d : phones) {
+			AvailablePhonesResult ap = new AvailablePhonesResult();
+			ap.location = "Foo";
+			ap.model = d.getDisplayName();
+			ap.quantity = "5";
+			availPhoneResult.add(ap);
+		}
+		modview.addObject("availphones", availPhoneResult);
+
+		// Query all non-current-user checked out phones
+		Query outPhones = pm.newQuery(Device.class);
+		phones = null;
+		if (user.getIsAdmin()) {
+			outPhones.setFilter("mStatus == stat");
+			outPhones.declareParameters("Integer stat");
+			phones = (List<Device>) outPhones
+					.execute(Status.DEVICE_CHECKED_OUT);
+		} else {
+			outPhones.setFilter("mStatus == stat && mCurrentUserId != gid");
+			outPhones.declareParameters("Integer stat, String gid");
+			phones = (List<Device>) outPhones.execute(
+					Status.DEVICE_CHECKED_OUT, user.getGoogleId());
+		}
+		ArrayList<CheckedOutPhonesResult> outPhoneResult = new ArrayList<CheckedOutPhonesResult>(
+				phones.size());
+		for (Device d : phones) {
+			CheckedOutPhonesResult op = new CheckedOutPhonesResult();
+			op.model = d.getDisplayName();
+			op.to = d.getCurrentUserGoogleId();
+			op.when = "last week?";
+			outPhoneResult.add(op);
+		}
+		modview.addObject("outphones", outPhoneResult);
+
 		return modview;
 	}
 
@@ -55,7 +126,6 @@ public class WebController {
 		return "register";
 	}
 
-	
 	@RequestMapping(value = "/register", method = RequestMethod.POST)
 	public String registerNewUser(@RequestParam("name") String name,
 			@RequestParam("phone") String phone, Model m) {
@@ -64,7 +134,7 @@ public class WebController {
 
 		// Ensure user is logged in
 		if (userService.isUserLoggedIn() == false)
-			return "redirect:" + userService.createLoginURL("/register");
+			return "error";
 
 		MagnumUser user = new MagnumUser(userService.getCurrentUser()
 				.getUserId(), phone, name);
