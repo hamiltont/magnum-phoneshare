@@ -3,9 +3,6 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="com.google.appengine.eclipse.core.GAE_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="war/WEB-INF/lib/appengine-api-1.0-sdk-1.5.2.jar"/>
-	<classpathentry kind="lib" path="war/WEB-INF/lib/appengine-api-labs-1.5.2.jar"/>
-	<classpathentry kind="lib" path="war/WEB-INF/lib/appengine-jsr107cache-1.5.2.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/com.springsource.antlr-2.7.7.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/com.springsource.org.apache.commons.beanutils-1.8.0.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/com.springsource.org.apache.commons.logging-1.1.1.jar"/>
@@ -21,14 +18,7 @@
 	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-fileupload-1.2.2.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-io-1.4.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/commons-lang-2.5.jar"/>
-	<classpathentry kind="lib" path="war/WEB-INF/lib/datanucleus-appengine-1.0.9.final.jar"/>
-	<classpathentry kind="lib" path="war/WEB-INF/lib/datanucleus-core-1.1.5.jar"/>
-	<classpathentry kind="lib" path="war/WEB-INF/lib/datanucleus-jpa-1.1.5.jar"/>
-	<classpathentry kind="lib" path="war/WEB-INF/lib/geronimo-jpa_3.0_spec-1.1.1.jar"/>
-	<classpathentry kind="lib" path="war/WEB-INF/lib/geronimo-jta_1.1_spec-1.1.1.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/jackson-all-1.6.1.jar"/>
-	<classpathentry kind="lib" path="war/WEB-INF/lib/jdo2-api-2.3-eb.jar"/>
-	<classpathentry kind="lib" path="war/WEB-INF/lib/jsr107cache-1.1.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/org.springframework.asm-3.0.5.RELEASE.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/org.springframework.beans-3.0.5.RELEASE.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/org.springframework.context-3.0.5.RELEASE.jar"/>
