@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+	<!--
+		As per Spring convention, this file is the configuration for the
+		servlet named 'dispatcher' in web.xml
+	-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd  
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+	<!-- Search for and import all components in the controllers package -->
+	<context:component-scan base-package="org.magnum.phoneshare.controllers" />
+
+
+
+	<bean name="viewResolver" class="org.springframework.web.servlet.view.XmlViewResolver">
+		<property name="order" value="2" />
+		<property name="location" value="/WEB-INF/views.xml" />
+	</bean>
+
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+
+		<!--
+			one of the properties available; the maximum file size in bytes
+		-->
+		<property name="maxUploadSize" value="100000" />
+	</bean>
+
+
+	<!--
+		Given an arbitrary view name, such as 'about, that has been returned
+		from a handler (controller), this will simply create
+		'/WEB-INF/jsp/about.jsp' and send that to the Dispatcher Servlet.
+		Because of the way ViewResolvers are chained (e.g. search until a View
+		is found), coupled with the annoyance that this ViewResolver cannot
+		determine if a View is found, this *has* to be the last ViewResolver
+		considered, so I have set the order very high. See
+		http://static.springsource.org/spring/docs/3.0.x/spring-framework-reference/html/mvc.html#mvc-viewresolver-chaining
+		for more details
+	-->
+	<bean id="jspResolver"
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="viewClass"
+			value="org.springframework.web.servlet.view.JstlView" />
+		<property name="prefix" value="/WEB-INF/jsp/" />
+		<property name="suffix" value=".jsp" />
+		<property name="order" value="999" />
+	</bean>
+
+</beans>
