@@ -6,6 +6,7 @@ import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.repackaged.com.google.io.protocol.proto.ProtocolDescriptor.DeclaredType;
 
 /**
  * Info about a device that can be checked out, such as a smartphone
@@ -42,6 +43,12 @@ public class Device {
 	
 	@Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
 	Key mKey;
+	
+	public Device(String model, String serial) {
+		mStatus = Status.DEVICE_CHECKED_IN;
+		mSerial = serial;
+		mDisplayName = model;
+	}
 	
 	public String getDisplayName() {
 		return mDisplayName;

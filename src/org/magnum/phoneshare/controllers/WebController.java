@@ -12,6 +12,7 @@ import org.magnum.phoneshare.data.PMF;
 import org.magnum.phoneshare.data.Device.Status;
 import org.magnum.phoneshare.data.jspmodels.AvailablePhonesResult;
 import org.magnum.phoneshare.data.jspmodels.CheckedOutPhonesResult;
+import org.magnum.phoneshare.data.jspmodels.PhoneDBResult;
 import org.magnum.phoneshare.data.jspmodels.UserPhoneResult;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.google.appengine.api.users.User;
 import com.google.appengine.api.users.UserService;
 import com.google.appengine.api.users.UserServiceFactory;
 
@@ -60,8 +62,7 @@ public class WebController {
 		userPhones.declareParameters("Integer status, String gid");
 		List<Device> phones = (List<Device>) userPhones.executeWithArray(
 				Status.DEVICE_CHECKED_OUT, user.getGoogleId());
-		ArrayList<UserPhoneResult> userPhoneResult = new ArrayList<UserPhoneResult>(
-				phones.size());
+		ArrayList<UserPhoneResult> userPhoneResult = new ArrayList<UserPhoneResult>();
 		for (Device d : phones) {
 			UserPhoneResult up = new UserPhoneResult();
 			up.model = d.getDisplayName();
@@ -82,8 +83,7 @@ public class WebController {
 		// phones = (List<Device>)
 		// availPhones.execute(Status.DEVICE_CHECKED_IN);
 		phones = new ArrayList<Device>();
-		ArrayList<AvailablePhonesResult> availPhoneResult = new ArrayList<AvailablePhonesResult>(
-				phones.size());
+		ArrayList<AvailablePhonesResult> availPhoneResult = new ArrayList<AvailablePhonesResult>();
 		for (Device d : phones) {
 			AvailablePhonesResult ap = new AvailablePhonesResult();
 			ap.location = "Foo";
@@ -107,8 +107,7 @@ public class WebController {
 			phones = (List<Device>) outPhones.execute(
 					Status.DEVICE_CHECKED_OUT, user.getGoogleId());
 		}
-		ArrayList<CheckedOutPhonesResult> outPhoneResult = new ArrayList<CheckedOutPhonesResult>(
-				phones.size());
+		ArrayList<CheckedOutPhonesResult> outPhoneResult = new ArrayList<CheckedOutPhonesResult>();
 		for (Device d : phones) {
 			CheckedOutPhonesResult op = new CheckedOutPhonesResult();
 			op.model = d.getDisplayName();
@@ -147,5 +146,88 @@ public class WebController {
 		}
 
 		return "registration_result";
+	}
+
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/phonedb", method = RequestMethod.GET)
+	public ModelAndView phoneDatabase(Model m) {
+		if (isPhoneShareAdmin() == false)
+			return new ModelAndView("error");
+
+		ModelAndView mv = new ModelAndView("phonedb");
+		mv.addObject("isAdminUser", true);
+
+		PersistenceManager pm = PMF.get().getPersistenceManager();
+		Query phoneQuery = pm.newQuery(Device.class);
+		List<Device> phones = (List<Device>) phoneQuery.execute();
+		List<PhoneDBResult> outResult = new ArrayList<PhoneDBResult>();
+		for (Device d : phones) {
+			PhoneDBResult pd = new PhoneDBResult();
+			pd.location = "No Idea";
+			pd.model = d.getDisplayName();
+			pd.time = " No idea";
+			pd.serial = d.getSerial();
+			outResult.add(pd);
+		}
+		mv.addObject("phone", outResult);
+
+		return mv;
+	}
+
+	@RequestMapping(value = "/register_phone", method = RequestMethod.GET)
+	public String showRegisterPhoneForm(
+			@RequestParam(value = "message", required = false) String message) {
+		if (message != null)
+			System.out.println("MEssage is " + message);
+
+		return "register_phone";
+	}
+
+	@SuppressWarnings("unchecked")
+	@RequestMapping(value = "/register_phone", method = RequestMethod.POST)
+	public String handleRegisterPhoneForm(@RequestParam("model") String model,
+			@RequestParam("serial") String serial) {
+
+		// Ensure no phone with that serial exists
+		PersistenceManager pm = PMF.get().getPersistenceManager();
+		Query search = pm.newQuery(Device.class);
+		search.setFilter("mSerial == serial");
+		search.declareParameters("String serial");
+		List<Device> devices = (List<Device>) search.execute(serial.trim());
+		if (devices.size() != 0)
+			return "error";
+
+		Device d = new Device(model, serial);
+		pm.makePersistent(d);
+
+		return "redirect:/register_phone?message=Success";
+	}
+
+	/**
+	 * Checks if the current user is a phone-share admin
+	 * 
+	 * @return true if the user is logged in and is a phone-share admin, false
+	 *         otherwise
+	 */
+	@SuppressWarnings("unchecked")
+	private boolean isPhoneShareAdmin() {
+		UserService us = UserServiceFactory.getUserService();
+		User user = us.getCurrentUser();
+		if (user == null)
+			return false;
+
+		if (us.isUserAdmin())
+			return true;
+
+		PersistenceManager pm = PMF.get().getPersistenceManager();
+		Query findUser = pm.newQuery(MagnumUser.class);
+		findUser.setFilter("googleID == gid");
+		findUser.declareParameters("String gid");
+		List<MagnumUser> results = (List<MagnumUser>) findUser.execute(user
+				.getUserId());
+		if (results.size() != 1)
+			return false;
+
+		return true;
 	}
 }

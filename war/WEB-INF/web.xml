@@ -23,6 +23,14 @@
 		</auth-constraint>
 	</security-constraint>
 
+	<security-constraint>
+		<web-resource-collection>
+			<url-pattern>/phonedb</url-pattern>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>*</role-name>
+		</auth-constraint>
+	</security-constraint>
 
 	<servlet>
 		<servlet-name>dispatcher</servlet-name>
