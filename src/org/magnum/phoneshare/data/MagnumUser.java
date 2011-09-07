@@ -1,8 +1,11 @@
 package org.magnum.phoneshare.data;
 
+import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
+
+import com.google.appengine.api.datastore.Key;
 
 /**
  * Some extra user information on top of the default Google user info. This
@@ -15,8 +18,11 @@ import javax.jdo.annotations.PrimaryKey;
 @PersistenceCapable
 public class MagnumUser {
 
-	@Persistent
 	@PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY) 
+	Key mKey;
+	
+	@Persistent
 	String googleID;
 
 	@Persistent
@@ -24,14 +30,18 @@ public class MagnumUser {
 
 	@Persistent
 	String fullname;
+	
+	@Persistent
+	String mEmail;
 
 	@Persistent
 	boolean isAdmin = false;
 
-	public MagnumUser(String googleId, String phone, String name) {
+	public MagnumUser(String googleId, String phone, String name, String email) {
 		googleID = googleId;
 		phoneNum = phone;
 		fullname = name;
+		mEmail = email;
 	}
 
 	public boolean getIsAdmin() {
@@ -40,5 +50,17 @@ public class MagnumUser {
 	
 	public String getGoogleId() {
 		return googleID;
+	}
+	
+	public String getName() {
+		return fullname;
+	}
+	
+	public String getEmail() {
+		return mEmail;
+	}
+	
+	public String getPhoneNumber() {
+		return phoneNum;
 	}
 }

@@ -4,7 +4,7 @@
 <div>
 	Magnum Phoneshare! - 
 
-	<c:if test="${isUserAdmin}">
+	<c:if test="${isAdminUser}">
 		<a href="/phonedb">Phone DB</a> | 
 		<a href="/users">Users</a> | 
 		<a href="/settings">Admin Settings</a> | 

@@ -5,6 +5,8 @@ import java.util.List;
 
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.magnum.phoneshare.data.Device;
 import org.magnum.phoneshare.data.MagnumUser;
@@ -14,8 +16,13 @@ import org.magnum.phoneshare.data.jspmodels.AvailablePhonesResult;
 import org.magnum.phoneshare.data.jspmodels.CheckedOutPhonesResult;
 import org.magnum.phoneshare.data.jspmodels.PhoneDBResult;
 import org.magnum.phoneshare.data.jspmodels.UserPhoneResult;
+import org.magnum.phoneshare.data.transfer.Admin2UserTransferRecord;
+import org.magnum.phoneshare.data.transfer.TransferRecord;
+import org.magnum.phoneshare.data.transfer.User2AdminTransferRecord;
+import org.magnum.phoneshare.data.transfer.User2UserTransferRecord;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -25,12 +32,12 @@ import com.google.appengine.api.users.User;
 import com.google.appengine.api.users.UserService;
 import com.google.appengine.api.users.UserServiceFactory;
 
+@SuppressWarnings("unchecked")
 @Controller
 public class WebController {
 
 	// TODO - If I'm clever I can simply return the List<Device> and process it
 	// properly inside the JSP instead of copying everything
-	@SuppressWarnings("unchecked")
 	@RequestMapping(value = "/home", method = RequestMethod.GET)
 	public ModelAndView getHome(Model model) {
 		// Ensure logged in
@@ -53,19 +60,21 @@ public class WebController {
 		// Set the isUserAdmin flag
 		MagnumUser user = results.get(0);
 		ModelAndView modview = new ModelAndView("home");
-		modview.addObject("isUserAdmin", user.getIsAdmin()
+		modview.addObject("isAdminUser", user.getIsAdmin()
 				|| userService.isUserAdmin());
 
 		// Query all the phones this user has
 		Query userPhones = pm.newQuery(Device.class);
-		userPhones.setFilter("mStatus == status && mCurrentUserId == gid");
-		userPhones.declareParameters("Integer status, String gid");
+		userPhones.setFilter("mStatus == status && mCurrentUser == user");
+		userPhones
+				.declareImports("import org.magnum.phoneshare.data.MagnumUser;");
+		userPhones.declareParameters("Integer status, MagnumUser user");
 		List<Device> phones = (List<Device>) userPhones.executeWithArray(
-				Status.DEVICE_CHECKED_OUT, user.getGoogleId());
+				Status.DEVICE_CHECKED_OUT, user);
 		ArrayList<UserPhoneResult> userPhoneResult = new ArrayList<UserPhoneResult>();
 		for (Device d : phones) {
 			UserPhoneResult up = new UserPhoneResult();
-			up.model = d.getDisplayName();
+			up.model = d.getModel();
 			up.checked_out = d.getLengthOfCheckOut();
 			up.serial = d.getSerial();
 			userPhoneResult.add(up);
@@ -79,15 +88,16 @@ public class WebController {
 		// availPhones.declareParameters("Integer stat");
 		// availPhones.setResult("count(displayName), displayName");
 		// availPhones.setGrouping("displayName");
+		Query availPhones = pm.newQuery(Device.class);
+		availPhones.setFilter("mStatus == stat");
+		availPhones.declareParameters("Integer stat");
+		phones = (List<Device>) availPhones.execute(Status.DEVICE_CHECKED_IN);
 
-		// phones = (List<Device>)
-		// availPhones.execute(Status.DEVICE_CHECKED_IN);
-		phones = new ArrayList<Device>();
 		ArrayList<AvailablePhonesResult> availPhoneResult = new ArrayList<AvailablePhonesResult>();
 		for (Device d : phones) {
 			AvailablePhonesResult ap = new AvailablePhonesResult();
 			ap.location = "Foo";
-			ap.model = d.getDisplayName();
+			ap.model = d.getModel();
 			ap.quantity = "5";
 			availPhoneResult.add(ap);
 		}
@@ -110,8 +120,8 @@ public class WebController {
 		ArrayList<CheckedOutPhonesResult> outPhoneResult = new ArrayList<CheckedOutPhonesResult>();
 		for (Device d : phones) {
 			CheckedOutPhonesResult op = new CheckedOutPhonesResult();
-			op.model = d.getDisplayName();
-			op.to = d.getCurrentUserGoogleId();
+			op.model = d.getModel();
+			op.to = d.getCurrentUser().getName();
 			op.when = "last week?";
 			outPhoneResult.add(op);
 		}
@@ -136,7 +146,8 @@ public class WebController {
 			return "error";
 
 		MagnumUser user = new MagnumUser(userService.getCurrentUser()
-				.getUserId(), phone, name);
+				.getUserId(), phone, name, userService.getCurrentUser()
+				.getEmail());
 
 		PersistenceManager pm = PMF.get().getPersistenceManager();
 		try {
@@ -148,7 +159,7 @@ public class WebController {
 		return "registration_result";
 	}
 
-	@SuppressWarnings("unchecked")
+	// TODO why can I see this page as an admin when I'm not logged in
 	@RequestMapping(value = "/phonedb", method = RequestMethod.GET)
 	public ModelAndView phoneDatabase(Model m) {
 		if (isPhoneShareAdmin() == false)
@@ -163,9 +174,9 @@ public class WebController {
 		List<PhoneDBResult> outResult = new ArrayList<PhoneDBResult>();
 		for (Device d : phones) {
 			PhoneDBResult pd = new PhoneDBResult();
-			pd.location = "No Idea";
-			pd.model = d.getDisplayName();
-			pd.time = " No idea";
+			pd.location = d.getLocation();
+			pd.model = d.getModel();
+			pd.time = d.getHowLong();
 			pd.serial = d.getSerial();
 			outResult.add(pd);
 		}
@@ -183,7 +194,6 @@ public class WebController {
 		return "register_phone";
 	}
 
-	@SuppressWarnings("unchecked")
 	@RequestMapping(value = "/register_phone", method = RequestMethod.POST)
 	public String handleRegisterPhoneForm(@RequestParam("model") String model,
 			@RequestParam("serial") String serial) {
@@ -209,7 +219,6 @@ public class WebController {
 	 * @return true if the user is logged in and is a phone-share admin, false
 	 *         otherwise
 	 */
-	@SuppressWarnings("unchecked")
 	private boolean isPhoneShareAdmin() {
 		UserService us = UserServiceFactory.getUserService();
 		User user = us.getCurrentUser();
@@ -230,4 +239,107 @@ public class WebController {
 
 		return true;
 	}
+
+	@RequestMapping(value = "/users", method = RequestMethod.GET)
+	public ModelAndView getUsers() {
+		if (!isPhoneShareAdmin())
+			return new ModelAndView("error");
+
+		ModelAndView mv = new ModelAndView("users");
+		mv.addObject("isAdminUser", true);
+
+		PersistenceManager pm = PMF.get().getPersistenceManager();
+		Query userQuery = pm.newQuery(MagnumUser.class);
+		mv.addObject("users", (List<MagnumUser>) userQuery.execute());
+
+		return mv;
+	}
+
+	@RequestMapping(value = "/device/{serial}", method = RequestMethod.GET)
+	public ModelAndView viewDeviceInfo(@PathVariable("serial") String serial) {
+
+		if (false == isPhoneShareAdmin())
+			return new ModelAndView("error");
+
+		// Query / add device info
+		PersistenceManager pm = PMF.get().getPersistenceManager();
+		Query deviceQuery = pm.newQuery(Device.class);
+		deviceQuery.setFilter("mSerial == serial");
+		deviceQuery.declareParameters("String serial");
+		List<Device> deviceResult = (List<Device>) deviceQuery.execute(serial);
+
+		if (deviceResult.size() != 1)
+			return new ModelAndView("error");
+
+		Device phone = deviceResult.get(0);
+
+		ModelAndView mv = new ModelAndView("device");
+		mv.addObject("isAdminUser", true);
+		mv.addObject("phone", phone);
+
+		// Query / add current user info
+		UserService us = UserServiceFactory.getUserService();
+		Query cuQuery = pm.newQuery(MagnumUser.class);
+		cuQuery.setFilter("googleID == gid");
+		cuQuery.declareParameters("String gid");
+		MagnumUser user = ((List<MagnumUser>) cuQuery.execute(us
+				.getCurrentUser().getUserId())).get(0);
+		mv.addObject("user", user);
+
+		// Query / add all user info
+		Query uQuery = pm.newQuery(MagnumUser.class);
+		List<MagnumUser> users = (List<MagnumUser>) uQuery.execute();
+		mv.addObject("users", users);
+
+		return mv;
+	}
+
+	@RequestMapping(value = "/transfer")
+	public ModelAndView initiateOrUpdatePhoneTransfer(
+			@RequestParam("from") String fromId,
+			@RequestParam("to") String toId, @RequestParam("type") String type, 
+			@RequestParam("serial") String serial) {
+
+		// Ensure that both from and to are phoneshare users
+		PersistenceManager pm = PMF.get().getPersistenceManager();
+		Query uq = pm.newQuery(MagnumUser.class);
+		uq.setFilter("googleID == user || googleID == other");
+		uq.declareParameters("String user, String other");
+		List<MagnumUser> users = (List<MagnumUser>) uq.execute(fromId, toId);
+		if (users.size() != 2 || (users.size() == 1 && fromId.equals(toId)))
+			return new ModelAndView("error");
+		MagnumUser from, to;
+		if (users.get(0).getGoogleId().equals(fromId)) {
+			from = users.get(0);
+			to = users.get(1);
+		} else {
+			from = users.get(1);
+			to = users.get(1);
+		}
+
+		// Build the transfer
+		TransferRecord tr = null;
+		if (type.equals("admin2user"))
+			tr = new Admin2UserTransferRecord();
+		else if (type.equals("user2user"))
+			tr = new User2UserTransferRecord();
+		else if (type.equals("user2admin"))
+			tr = new User2AdminTransferRecord();
+		else
+			return new ModelAndView("error");
+		tr.setTo(to);
+		tr.setFrom(from);
+
+		// TODO add in email option
+		
+		// TODO ensure a device exists with that serial
+		
+		// TODO The currently logged in user should be detected to limit the
+		// update options
+		pm.makePersistent(tr);
+		
+
+		return new ModelAndView("transfer");
+	}
+
 }

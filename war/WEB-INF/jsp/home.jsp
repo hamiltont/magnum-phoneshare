@@ -4,7 +4,7 @@
 <div>
 	Magnum Phoneshare! - 
 
-	<c:if test="${isUserAdmin}">
+	<c:if test="${isAdminUser}">
 		<a href="/phonedb">Phone DB</a> | 
 		<a href="/users">Users</a> | 
 		<a href="/settings">Admin Settings</a> | 
@@ -16,9 +16,8 @@
 
 <div>
 	
-	<c:if test="!${isUserAdmin}">
 	<h3>Your Phones</h3>
-	<table>
+	<table border="1">
 	<tr>
 		<td>Model</td>
 		<td>Checked Out</td>
@@ -34,28 +33,27 @@
 		</tr>
 	</c:forEach>
 	</table>
-	</c:if>
 
 	<h3>Available Phones</h3>
-	<table>
+	<table border="1">
 	<tr>
 		<td>Model</td>
-		<td>Quantity</td>
-		<c:if test="${isUserAdmin}">
+		<!--<td>Quantity</td>
+		<c:if test="${isAdminUser}">
 			<td>Location</td>
-		</c:if>
-		<c:if test="!${isUserAdmin}">
+		</c:if>-->
+		<c:if test="!${isAdminUser}">
 			<td>&nbsp;</td>
 		</c:if>
 	</tr>
 	<c:forEach items="${availphones}" var="ap">
 		<tr>
 			<td>${ap.model}</td>
-			<td>${ap.quantity}</td>
-			<c:if test="${isUserAdmin}">
+			<!--td>${ap.quantity}</td>
+			<c:if test="${isAdminUser}">
 				<td>${ap.location}</td>
-			</c:if>	
-			<c:if test="!${isUserAdmin}">
+			</c:if>	-->
+			<c:if test="!${isAdminUser}">
 				<td>X</td>
 			</c:if>
 		</tr>
@@ -64,7 +62,7 @@
 	
 	
 	<h3>Checked Out Phones</h3>
-	<table>
+	<table border="1">
 	<tr>
 		<td>Model</td>
 		<td>To Whom</td>	
