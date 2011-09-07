@@ -1,9 +1,13 @@
-package org.magnum.phoneshare.data;
+package org.magnum.phoneshare.data.transfer;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
+
+import org.magnum.phoneshare.data.MagnumUser;
 
 import com.google.appengine.api.datastore.Key;
 
@@ -26,25 +30,56 @@ public abstract class TransferRecord {
 	Key mPhone;
 
 	@Persistent
-	String mFromGoogleId;
+	MagnumUser mFrom;
 
 	@Persistent
-	String mToGoogleId;
+	MagnumUser mTo;
 
 	@Persistent
 	Date mDateCreated;
 
 	@Persistent
-	Accessories mAccessoriesIncluded;
+	Date mDateFinalized;
+
+	@Persistent
+	List<Accessories> mAccessoriesIncluded = new ArrayList<Accessories>();
 
 	/**
 	 * Signals if the transfer is in an incomplete state, which will typically
 	 * cause the nightly cron to inspect this transfer and see if and action
-	 * such as email is required.
+	 * such as mEmail is required.
 	 * 
 	 * @return true if this transfer is complete, false if this transfer is
 	 *         incomplete (perhaps only one of the two parties has agreed that
 	 *         this transfer occurred)
 	 */
 	public abstract boolean isTransferComplete();
+
+	public MagnumUser getFrom() {
+		return mFrom;
+	}
+
+	public MagnumUser getTo() {
+		return mTo;
+	}
+
+	public Date getFinalizedDate() {
+		return mDateFinalized;
+	}
+
+	public String getFinalizedDateString() {
+		return mDateFinalized.toLocaleString();
+	}
+
+	public boolean hasAccessories() {
+		return mAccessoriesIncluded.size() > 0;
+	}
+	
+	public void setTo(MagnumUser toUser) {
+		mTo = toUser;
+	}
+	
+	public void setFrom(MagnumUser fromUser) {
+		mFrom = fromUser;
+	}
 }

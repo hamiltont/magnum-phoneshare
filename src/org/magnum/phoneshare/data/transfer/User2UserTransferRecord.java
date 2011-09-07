@@ -1,4 +1,4 @@
-package org.magnum.phoneshare.data;
+package org.magnum.phoneshare.data.transfer;
 
 import java.util.Date;
 
